@@ -63,7 +63,7 @@ class TBTimer: ObservableObject {
         stateMachine.addAnyHandler(.work => .rest, order: 0, handler: onWorkFinish)
         stateMachine.addAnyHandler(.work => .any, order: 1, handler: onWorkEnd)
         stateMachine.addAnyHandler(.any => .rest, handler: onRestStart)
-        stateMachine.addAnyHandler(.rest => .work, handler: onRestFinish)
+        stateMachine.addAnyHandler(.rest => .any, handler: onRestFinish)
         stateMachine.addAnyHandler(.any => .idle, handler: onIdleStart)
         stateMachine.addAnyHandler(.any => .any, handler: { ctx in
             logger.append(event: TBLogEventTransition(fromContext: ctx))
@@ -179,7 +179,7 @@ class TBTimer: ObservableObject {
         TBStatusItem.shared.setIcon(name: .work)
         player.playWindup()
         player.startTicking()
-        startTimer(seconds: workIntervalLength * 60)
+        startTimer(seconds: workIntervalLength * 10)
     }
 
     private func onWorkFinish(context _: TBStateMachine.Context) {
@@ -208,18 +208,20 @@ class TBTimer: ObservableObject {
             category: .restStarted
         )
         TBStatusItem.shared.setIcon(name: imgName)
-        startTimer(seconds: length * 60)
+        startTimer(seconds: length * 10)
     }
 
     private func onRestFinish(context ctx: TBStateMachine.Context) {
-        if ctx.event == .skipRest {
-            return
+        print("TBSpotify: onRestFinish fired, event=\(ctx.event)")
+        guard let event = ctx.event, event == .timerFired else { return }
+        TBSpotify.playAlarm()
+        if ctx.toState == .work {
+            notificationCenter.send(
+                title: NSLocalizedString("TBTimer.onRestFinish.title", comment: "Break is over title"),
+                body: NSLocalizedString("TBTimer.onRestFinish.body", comment: "Break is over body"),
+                category: .restFinished
+            )
         }
-        notificationCenter.send(
-            title: NSLocalizedString("TBTimer.onRestFinish.title", comment: "Break is over title"),
-            body: NSLocalizedString("TBTimer.onRestFinish.body", comment: "Break is over body"),
-            category: .restFinished
-        )
     }
 
     private func onIdleStart(context _: TBStateMachine.Context) {

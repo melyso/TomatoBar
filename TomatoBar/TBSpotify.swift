@@ -1,11 +1,13 @@
 import Foundation
 
-/// Pauses Spotify, if and only if it is already running and playing.
-///
-/// Deliberately does not resume: the point of the break is the silence.
-/// Deliberately does not handle any other player: personal build, known habits.
 enum TBSpotify {
-    private static let source = """
+    /// The track to fire at the end of a rest block. Right-click a track in
+    /// Spotify → Share, hold Option, "Copy Spotify URI".
+    private static let alarmURI = "spotify:track:5Wjjn7sW1VT9enCdZLqBK2"
+
+    // MARK: - Scripts
+
+    private static let pauseScript = """
     if application "Spotify" is running then
         tell application "Spotify"
             if player state is playing then pause
@@ -13,27 +15,39 @@ enum TBSpotify {
     end if
     """
 
-    /// Safe to call when Spotify is closed, or when nothing is playing —
-    /// both cases are no-ops. Never launches Spotify.
-    static func pause() {
-        // NSAppleScript is not thread-safe; keep it on the main thread.
+    private static var alarmScript: String {
+        """
+        tell application "Spotify"
+            activate
+            play track "\(alarmURI)"
+        end tell
+        """
+    }
+
+    // MARK: - Public API
+
+    /// Pause, if running and playing. Never launches Spotify.
+    static func pause() { run(pauseScript, label: "pause") }
+
+    /// Play the alarm track. Launches Spotify if closed, and deliberately
+    /// replaces the current playback context — this ends the break.
+    static func playAlarm() { run(alarmScript, label: "alarm") }
+
+    // MARK: - Plumbing
+
+    private static func run(_ source: String, label: String) {
         guard Thread.isMainThread else {
-            DispatchQueue.main.async { pause() }
+            DispatchQueue.main.async { run(source, label: label) }
             return
         }
-
         guard let script = NSAppleScript(source: source) else {
-            print("TBSpotify: could not compile script")
+            print("TBSpotify: could not compile \(label)")
             return
         }
-
         var error: NSDictionary?
         script.executeAndReturnError(&error)
-
         if let error = error {
-            // -1743 means the user denied (or was never asked for) Automation
-            // permission. See System Settings > Privacy & Security > Automation.
-            print("TBSpotify: pause failed: \(error)")
+            print("TBSpotify: \(label) failed: \(error)")
         }
     }
 }
