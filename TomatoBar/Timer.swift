@@ -184,6 +184,7 @@ class TBTimer: ObservableObject {
 
     private func onWorkFinish(context _: TBStateMachine.Context) {
         consecutiveWorkIntervals += 1
+        TBSpotify.pause()
         player.playDing()
     }
 
