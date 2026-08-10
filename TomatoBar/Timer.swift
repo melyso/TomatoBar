@@ -181,7 +181,7 @@ class TBTimer: ObservableObject {
         TBStatusItem.shared.setIcon(name: .work)
         player.playWindup()
         player.startTicking()
-        startTimer(seconds: workIntervalLength * 10)
+        startTimer(seconds: workIntervalLength * 60)
     }
 
     private func onWorkFinish(context _: TBStateMachine.Context) {
@@ -213,7 +213,7 @@ class TBTimer: ObservableObject {
             category: .restStarted
         )
         TBStatusItem.shared.setIcon(name: imgName)
-        startTimer(seconds: length * 10)
+        startTimer(seconds: length * 60)
     }
 
     private func onRestFinish(context ctx: TBStateMachine.Context) {
@@ -236,7 +236,7 @@ class TBTimer: ObservableObject {
     }
     func convertToShortRest() {
         guard isLongRest, timer != nil else { return }
-        let delta = TimeInterval((longRestIntervalLength - shortRestIntervalLength) * 10)
+        let delta = TimeInterval((longRestIntervalLength - shortRestIntervalLength) * 60)
         let shortened = finishTime.addingTimeInterval(-delta)
         /* Don't land far enough in the past to trip overrunTimeLimit, which
            would stop the timer instead of firing it. */
