@@ -20,6 +20,8 @@ class TBTimer: ObservableObject {
     private var timerFormatter = DateComponentsFormatter()
     @Published var timeLeftString: String = ""
     @Published var timer: DispatchSourceTimer?
+    @Published var isLongRest = false
+    private var intervalsBeforeLongRest = 0
 
     init() {
         /*
@@ -179,7 +181,7 @@ class TBTimer: ObservableObject {
         TBStatusItem.shared.setIcon(name: .work)
         player.playWindup()
         player.startTicking()
-        startTimer(seconds: workIntervalLength * 60)
+        startTimer(seconds: workIntervalLength * 10)
     }
 
     private func onWorkFinish(context _: TBStateMachine.Context) {
@@ -196,10 +198,13 @@ class TBTimer: ObservableObject {
         var body = NSLocalizedString("TBTimer.onRestStart.short.body", comment: "Short break body")
         var length = shortRestIntervalLength
         var imgName = NSImage.Name.shortRest
+        isLongRest = false
         if consecutiveWorkIntervals >= workIntervalsInSet {
             body = NSLocalizedString("TBTimer.onRestStart.long.body", comment: "Long break body")
             length = longRestIntervalLength
             imgName = .longRest
+            isLongRest = true
+            intervalsBeforeLongRest = consecutiveWorkIntervals
             consecutiveWorkIntervals = 0
         }
         notificationCenter.send(
@@ -208,11 +213,11 @@ class TBTimer: ObservableObject {
             category: .restStarted
         )
         TBStatusItem.shared.setIcon(name: imgName)
-        startTimer(seconds: length * 60)
+        startTimer(seconds: length * 10)
     }
 
     private func onRestFinish(context ctx: TBStateMachine.Context) {
-        print("TBSpotify: onRestFinish fired, event=\(ctx.event)")
+        isLongRest = false
         guard let event = ctx.event, event == .timerFired else { return }
         TBSpotify.playAlarm()
         if ctx.toState == .work {
@@ -228,5 +233,17 @@ class TBTimer: ObservableObject {
         stopTimer()
         TBStatusItem.shared.setIcon(name: .idle)
         consecutiveWorkIntervals = 0
+    }
+    func convertToShortRest() {
+        guard isLongRest, timer != nil else { return }
+        let delta = TimeInterval((longRestIntervalLength - shortRestIntervalLength) * 10)
+        let shortened = finishTime.addingTimeInterval(-delta)
+        /* Don't land far enough in the past to trip overrunTimeLimit, which
+           would stop the timer instead of firing it. */
+        finishTime = max(shortened, Date().addingTimeInterval(1))
+        isLongRest = false
+        consecutiveWorkIntervals = intervalsBeforeLongRest
+        TBStatusItem.shared.setIcon(name: .shortRest)
+        updateTimeLeft()
     }
 }

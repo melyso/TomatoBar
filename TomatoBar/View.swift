@@ -133,24 +133,33 @@ struct TBPopoverView: View {
     @ObservedObject var timer = TBTimer()
     @State private var buttonHovered = false
     @State private var activeChildView = ChildView.intervals
+    @State private var optionHeld = false
+    @State private var flagsMonitor: Any?
 
+    private var shortBreakLabel = "Short break"
+
+    private var labelText: String {
+        if timer.timer == nil { return startLabel }
+        if buttonHovered {
+            return (optionHeld && timer.isLongRest) ? shortBreakLabel : stopLabel
+        }
+        return timer.timeLeftString
+    }
+    
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
     private var stopLabel = NSLocalizedString("TBPopoverView.stop.label", comment: "Stop label")
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                timer.startStop()
-                TBStatusItem.shared.closePopover(nil)
+                if buttonHovered && optionHeld && timer.isLongRest {
+                    timer.convertToShortRest()
+                } else {
+                    timer.startStop()
+                    TBStatusItem.shared.closePopover(nil)
+                }
             } label: {
-                Text(timer.timer != nil ?
-                     (buttonHovered ? stopLabel : timer.timeLeftString) :
-                        startLabel)
-                    /*
-                      When appearance is set to "Dark" and accent color is set to "Graphite"
-                      "defaultAction" button label's color is set to the same color as the
-                      button, making the button look blank. #24
-                     */
+                Text(labelText)
                     .foregroundColor(Color.white)
                     .font(.system(.body).monospacedDigit())
                     .frame(maxWidth: .infinity)
@@ -225,6 +234,18 @@ struct TBPopoverView: View {
             /* Use values from GeometryReader */
 //            .frame(width: 240, height: 276)
             .padding(12)
+            .onAppear {
+                optionHeld = NSEvent.modifierFlags.contains(.option)
+                flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
+                    optionHeld = event.modifierFlags.contains(.option)
+                    return event
+                }
+            }
+            .onDisappear {
+                if let monitor = flagsMonitor { NSEvent.removeMonitor(monitor) }
+                flagsMonitor = nil
+                optionHeld = false
+            }
     }
 }
 
