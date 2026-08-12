@@ -103,7 +103,9 @@ private struct VolumeSlider: View {
 
 private struct SoundsView: View {
     @EnvironmentObject var player: TBPlayer
-
+    
+    @FocusState private var uriFocused: Bool
+    
     private var columns = [
         GridItem(.flexible()),
         GridItem(.fixed(110))
@@ -123,8 +125,13 @@ private struct SoundsView: View {
                                        comment: "Ticking label"))
                 VolumeSlider(volume: $player.tickingVolume)
             }
+            Divider()
+                .padding(.vertical, 4)
+            Text("Spotify URI for session start:")
             TextField("spotify:track:…", text: $player.alarmURI)
                 .textFieldStyle(.roundedBorder)
+                .focused($uriFocused)
+                .onSubmit { uriFocused = false }
             Toggle(isOn: $player.resumeInsteadOfTrack) {
                 Text("Resume instead")
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -212,10 +219,10 @@ struct TBPopoverView: View {
                     Text(NSLocalizedString("TBPopoverView.about.label",
                                            comment: "About label"))
                     Spacer()
-                    Text("⌘ A").foregroundColor(Color.gray)
+                    Text("⌘ B").foregroundColor(Color.gray)
                 }
                 .buttonStyle(.plain)
-                .keyboardShortcut("a")
+                .keyboardShortcut("b")
                 Button {
                     NSApplication.shared.terminate(self)
                 } label: {
