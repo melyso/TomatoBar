@@ -15,23 +15,34 @@ enum TBSpotify {
     end if
     """
 
-    private static var alarmScript: String {
-        """
+    private static let resumeScript = """
+    if application "Spotify" is running then
         tell application "Spotify"
-            activate
-            play track "\(alarmURI)"
+            if player state is paused then play
         end tell
-        """
-    }
+    end if
+    """
+
 
     // MARK: - Public API
 
     /// Pause, if running and playing. Never launches Spotify.
     static func pause() { run(pauseScript, label: "pause") }
+    static func resume() { run(resumeScript, label: "resume") }
+
 
     /// Play the alarm track. Launches Spotify if closed, and deliberately
     /// replaces the current playback context — this ends the break.
-    static func playAlarm() { run(alarmScript, label: "alarm") }
+    static func playAlarm(spotifyURI: String){
+        let alarmScript = """
+        tell application "Spotify"
+            activate
+            play track "\(spotifyURI)"
+        end tell
+        """
+
+        run(alarmScript, label: "alarm")
+    }
 
     // MARK: - Plumbing
 

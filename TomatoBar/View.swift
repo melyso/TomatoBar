@@ -110,18 +110,29 @@ private struct SoundsView: View {
     ]
 
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
-            Text(NSLocalizedString("SoundsView.isWindupEnabled.label",
-                                   comment: "Windup label"))
-            VolumeSlider(volume: $player.windupVolume)
-            Text(NSLocalizedString("SoundsView.isDingEnabled.label",
-                                   comment: "Ding label"))
-            VolumeSlider(volume: $player.dingVolume)
-            Text(NSLocalizedString("SoundsView.isTickingEnabled.label",
-                                   comment: "Ticking label"))
-            VolumeSlider(volume: $player.tickingVolume)
-        }.padding(4)
-        Spacer().frame(minHeight: 0)
+        VStack(alignment: .leading, spacing: 4) {
+            
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
+                Text(NSLocalizedString("SoundsView.isWindupEnabled.label",
+                                       comment: "Windup label"))
+                VolumeSlider(volume: $player.windupVolume)
+                Text(NSLocalizedString("SoundsView.isDingEnabled.label",
+                                       comment: "Ding label"))
+                VolumeSlider(volume: $player.dingVolume)
+                Text(NSLocalizedString("SoundsView.isTickingEnabled.label",
+                                       comment: "Ticking label"))
+                VolumeSlider(volume: $player.tickingVolume)
+            }
+            TextField("spotify:track:…", text: $player.alarmURI)
+                .textFieldStyle(.roundedBorder)
+            Toggle(isOn: $player.resumeInsteadOfTrack) {
+                Text("Resume instead")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }.toggleStyle(.switch)
+
+            Spacer().frame(minHeight: 0)
+        }
+        .padding(4)
     }
 }
 

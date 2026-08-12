@@ -21,6 +21,19 @@ class TBPlayer: ObservableObject {
             setVolume(tickingSound, tickingVolume)
         }
     }
+    
+    @AppStorage("alarmURI") var alarmURI = "spotify:track:5Wjjn7sW1VT9enCdZLqBK2" {
+        didSet {
+            if alarmURI.hasPrefix("https://open.spotify.com/track/") {
+                let id = alarmURI
+                    .replacingOccurrences(of: "https://open.spotify.com/track/", with: "")
+                    .components(separatedBy: "?")[0]
+                alarmURI = "spotify:track:\(id)"
+            }
+        }
+    }
+    
+    @AppStorage("resumeInsteadOfTrack") var resumeInsteadOfTrack = false
 
     private func setVolume(_ sound: AVAudioPlayer, _ volume: Double) {
         sound.setVolume(Float(volume), fadeDuration: 0)
@@ -64,5 +77,17 @@ class TBPlayer: ObservableObject {
 
     func stopTicking() {
         tickingSound.stop()
+    }
+    
+    func pauseSpotify() {
+        TBSpotify.pause()
+    }
+    
+    func playAlarm() {
+        if resumeInsteadOfTrack {
+            TBSpotify.resume()
+        } else {
+            TBSpotify.playAlarm(spotifyURI: alarmURI)
+        }
     }
 }

@@ -22,6 +22,12 @@ class TBTimer: ObservableObject {
     @Published var timer: DispatchSourceTimer?
     @Published var isLongRest = false
     private var intervalsBeforeLongRest = 0
+    
+    #if DEBUG
+    private let minuteLength = 15
+    #else
+    private let minuteLength = 60
+    #endif
 
     init() {
         /*
@@ -181,12 +187,12 @@ class TBTimer: ObservableObject {
         TBStatusItem.shared.setIcon(name: .work)
         player.playWindup()
         player.startTicking()
-        startTimer(seconds: workIntervalLength * 60)
+        startTimer(seconds: workIntervalLength * minuteLength)
     }
 
     private func onWorkFinish(context _: TBStateMachine.Context) {
         consecutiveWorkIntervals += 1
-        TBSpotify.pause()
+        player.pauseSpotify()
         player.playDing()
     }
 
@@ -213,13 +219,13 @@ class TBTimer: ObservableObject {
             category: .restStarted
         )
         TBStatusItem.shared.setIcon(name: imgName)
-        startTimer(seconds: length * 60)
+        startTimer(seconds: length * minuteLength)
     }
 
     private func onRestFinish(context ctx: TBStateMachine.Context) {
         isLongRest = false
         guard let event = ctx.event, event == .timerFired else { return }
-        TBSpotify.playAlarm()
+        player.playAlarm()
         if ctx.toState == .work {
             notificationCenter.send(
                 title: NSLocalizedString("TBTimer.onRestFinish.title", comment: "Break is over title"),
@@ -236,7 +242,7 @@ class TBTimer: ObservableObject {
     }
     func convertToShortRest() {
         guard isLongRest, timer != nil else { return }
-        let delta = TimeInterval((longRestIntervalLength - shortRestIntervalLength) * 60)
+        let delta = TimeInterval((longRestIntervalLength - shortRestIntervalLength) * minuteLength)
         let shortened = finishTime.addingTimeInterval(-delta)
         /* Don't land far enough in the past to trip overrunTimeLimit, which
            would stop the timer instead of firing it. */
