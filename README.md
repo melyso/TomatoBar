@@ -102,3 +102,7 @@ from the command line, use `open tomatobar://startStop`.
 
 - Upstream TomatoBar is MIT licensed — see [LICENSE](LICENSE).
 - Timer sounds are licensed from buddhabeats.
+
+## Issues
+
+- Popover seems to get sluggish after the app running for a long time, restarting fixes it. Spawning monitors several times without removing them seems to be ruled out. to-be-looked-at.
