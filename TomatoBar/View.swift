@@ -157,7 +157,7 @@ struct TBPopoverView: View {
     private var shortBreakLabel = "Short break"
 
     private var labelText: String {
-        if timer.timer == nil { return startLabel }
+        if !timer.isRunning { return startLabel }
         if buttonHovered {
             return (optionHeld && timer.isLongRest) ? shortBreakLabel : stopLabel
         }

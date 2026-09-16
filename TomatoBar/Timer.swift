@@ -19,7 +19,9 @@ class TBTimer: ObservableObject {
     private var finishTime: Date!
     private var timerFormatter = DateComponentsFormatter()
     @Published var timeLeftString: String = ""
-    @Published var timer: DispatchSourceTimer?
+    private let timerQueue = DispatchQueue(label: "Timer")
+    private var timer: DispatchSourceTimer?
+    @Published var isRunning = false
     @Published var isLongRest = false
     private var intervalsBeforeLongRest = 0
     
@@ -139,17 +141,18 @@ class TBTimer: ObservableObject {
     private func startTimer(seconds: Int) {
         finishTime = Date().addingTimeInterval(TimeInterval(seconds))
 
-        let queue = DispatchQueue(label: "Timer")
-        timer = DispatchSource.makeTimerSource(flags: .strict, queue: queue)
+        timer = DispatchSource.makeTimerSource(flags: .strict, queue: timerQueue)
         timer!.schedule(deadline: .now(), repeating: .seconds(1), leeway: .never)
-        timer!.setEventHandler(handler: onTimerTick)
-        timer!.setCancelHandler(handler: onTimerCancel)
+        timer!.setEventHandler { [weak self] in self?.onTimerTick()}
+        timer!.setCancelHandler { [weak self] in self?.onTimerCancel()}
         timer!.resume()
+        isRunning = true
     }
 
     private func stopTimer() {
         timer!.cancel()
         timer = nil
+        isRunning = false
     }
 
     private func onTimerTick() {
