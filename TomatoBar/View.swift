@@ -147,8 +147,62 @@ private enum ChildView {
     case intervals, settings, sounds
 }
 
+private struct TimerButton: View {
+    @ObservedObject var timer: TBTimer
+
+    @State private var buttonHovered = false
+    @State private var optionHeld = false
+    @State private var flagsMonitor: Any?
+
+    private let startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
+    private let stopLabel = NSLocalizedString("TBPopoverView.stop.label", comment: "Stop label")
+    private let shortBreakLabel = "Short break"
+
+    private var labelText: String {
+        if !timer.isRunning { return startLabel }
+        if buttonHovered {
+            return (optionHeld && timer.isLongRest) ? shortBreakLabel : stopLabel
+        }
+        return timer.timeLeftString
+    }
+
+    var body: some View {
+        Button {
+            if buttonHovered && optionHeld && timer.isLongRest {
+                timer.convertToShortRest()
+            } else {
+                timer.startStop()
+                TBStatusItem.shared.closePopover(nil)
+            }
+        } label: {
+            Text(labelText)
+                .foregroundColor(Color.white)
+                .font(.system(.body).monospacedDigit())
+                .frame(maxWidth: .infinity)
+        }
+        .onHover { over in
+            buttonHovered = over
+        }
+        .controlSize(.large)
+        .keyboardShortcut(.defaultAction)
+        .onAppear {
+            optionHeld = NSEvent.modifierFlags.contains(.option)
+            guard flagsMonitor == nil else { return }
+            flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
+                optionHeld = event.modifierFlags.contains(.option)
+                return event
+            }
+        }
+        .onDisappear {
+            if let monitor = flagsMonitor { NSEvent.removeMonitor(monitor) }
+            flagsMonitor = nil
+            optionHeld = false
+        }
+    }
+}
+
 struct TBPopoverView: View {
-    @ObservedObject var timer = TBTimer()
+    private let timer = TBTimer()
     @State private var buttonHovered = false
     @State private var activeChildView = ChildView.intervals
     @State private var optionHeld = false
@@ -169,24 +223,7 @@ struct TBPopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button {
-                if buttonHovered && optionHeld && timer.isLongRest {
-                    timer.convertToShortRest()
-                } else {
-                    timer.startStop()
-                    TBStatusItem.shared.closePopover(nil)
-                }
-            } label: {
-                Text(labelText)
-                    .foregroundColor(Color.white)
-                    .font(.system(.body).monospacedDigit())
-                    .frame(maxWidth: .infinity)
-            }
-            .onHover { over in
-                buttonHovered = over
-            }
-            .controlSize(.large)
-            .keyboardShortcut(.defaultAction)
+            TimerButton(timer: timer)
 
             Picker("", selection: $activeChildView) {
                 Text(NSLocalizedString("TBPopoverView.intervals.label",
