@@ -47,6 +47,10 @@ enum TBSpotify {
     // MARK: - Plumbing
 
     private static func run(_ source: String, label: String) {
+        #if DEBUG
+        print("TBSpotify: [debug] skipping \(label)")
+        return
+        #endif
         guard Thread.isMainThread else {
             DispatchQueue.main.async { run(source, label: label) }
             return
